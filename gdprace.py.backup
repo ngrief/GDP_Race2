@@ -1,0 +1,31 @@
+import pandas as pd, numpy as np, matplotlib.pyplot as plt, matplotlib.animation as anim
+import IPython.display as ipd
+
+# ── Load World Bank GDP data (sample CSV) ───────
+gdp = pd.read_csv("https://raw.githubusercontent.com/datasets/gdp/master/data/gdp.csv")
+gdp = gdp[gdp['Year']>=1960]
+gdp_pivot = gdp.pivot(index='Year', columns='Country Name', values='Value').fillna(0)
+
+# ── Prep ────────────────────────────────────────
+TOP_N = 10
+years = gdp_pivot.index
+fig, ax = plt.subplots(figsize=(8,6))
+colors = plt.cm.tab20(range(TOP_N))
+
+def draw(year):
+    ax.clear()
+    top = gdp_pivot.loc[year].nlargest(TOP_N)[::-1]      # bottom → top
+    ax.barh(top.index, top.values/1e12, color=colors)
+    ax.set_title(f"Top {TOP_N} World GDPs – {year}", fontsize=16)
+    ax.set_xlabel("GDP (Trillions USD)")
+    ax.set_xlim(0, top.values.max()/1e12*1.1)
+    for i,(v,country) in enumerate(zip(top.values, top.index)):
+        ax.text(v/1e12, i, f" {v/1e12:,.2f}", va='center')
+    ax.grid(axis='x', alpha=.3)
+
+ani = anim.FuncAnimation(fig, draw, frames=years, interval=120)
+plt.close(fig) # Close the initial figure to prevent it from displaying
+
+# Save and display the animation
+html_output = ipd.HTML(ani.to_jshtml())
+ipd.display(html_output)
